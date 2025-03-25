@@ -1,11 +1,10 @@
 ﻿using k8s;
 using k8s.Models;
-using Microsoft.Extensions.Hosting;
 using QueueOperator.CustomResourceDefinitions;
 
 namespace QueueOperator
 {
-    public class SetActiveJobToNullWorker(Kubernetes client) : BackgroundService
+    public class SetActiveJobToNullWorker(Kubernetes client) : ThreadedHostedService
     {
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -20,6 +19,7 @@ namespace QueueOperator
             {
                 if (!job.IsDone())
                 {
+                    Console.WriteLine($"[{nameof(SetActiveJobToNullWorker)}] Job {job.Metadata.Name} is not done.");
                     continue;
                 }
 
@@ -34,12 +34,13 @@ namespace QueueOperator
 
                     if (job.Metadata.Name != jobQueue.Status.ActiveJob)
                     {
+                        Console.WriteLine($"[{nameof(SetActiveJobToNullWorker)}] status.activeJob {jobQueue.Status.ActiveJob} does not match {job.Metadata.Name}");
                         continue;
                     }
 
                     jobQueue.Status.ActiveJob = null;
 
-                    var patch = new V1Patch(jobQueue.Status, V1Patch.PatchType.MergePatch);
+                    var patch = new V1Patch(jobQueue, V1Patch.PatchType.MergePatch);
                     await client.PatchNamespacedCustomObjectAsync(
                         body: patch,
                         group: "navitaire.com",
@@ -47,6 +48,8 @@ namespace QueueOperator
                         namespaceParameter: "default",
                         plural: "jobqueues",
                         name: "sample-queue");
+
+                    Console.WriteLine($"[{nameof(SetActiveJobToNullWorker)}] Updated sample-queue to have no status.activeJob.");
                 }
                 catch (Exception ex)
                 {

@@ -52,3 +52,31 @@ spec:
           - spec
       subresources:
         status: {}
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: jobqueue-status-updater
+rules:
+  - apiGroups:
+      - navitaire.com # Replace with your CRD's group
+    resources:
+      - jobqueues/status # Replace 'jobqueues' with the plural name of your resource
+    verbs:
+      - patch
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: jobqueue-status-updater-binding
+subjects:
+  - kind: ServiceAccount # Can also be User or Group
+    name: default # Replace with the name of the service account
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: jobqueue-status-updater # Name of the Role to bin

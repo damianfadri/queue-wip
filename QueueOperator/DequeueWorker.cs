@@ -5,7 +5,7 @@ using QueueOperator.CustomResourceDefinitions;
 
 namespace QueueOperator
 {
-    public class DequeueWorker(Kubernetes client) : BackgroundService
+    public class DequeueWorker(Kubernetes client) : ThreadedHostedService
     {
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -14,25 +14,25 @@ namespace QueueOperator
                 version: "v1",
                 namespaceParameter: "default",
                 plural: "jobqueues",
-                labelSelector: "app=sample-queue",
                 watch: true);
-
-            Console.WriteLine($"Starting {nameof(DequeueWorker)}");
 
             await foreach (var (type, jobQueue) in jobQueues.WatchAsync<V1JobQueue, V1JobQueueList>())
             {
                 if (type != WatchEventType.Modified)
                 {
+                    Console.WriteLine($"[{nameof(DequeueWorker)}] JobType is not Modified.");
                     continue;
                 }
 
                 if (jobQueue.Status.ActiveJob != null)
                 {
+                    Console.WriteLine($"[{nameof(DequeueWorker)}] status.activeJob = {jobQueue.Status.ActiveJob}.");
                     continue;
                 }
 
                 if (jobQueue.Status.Queue.Count == 0)
                 {
+                    Console.WriteLine($"[{nameof(DequeueWorker)}] status.queue.count = {jobQueue.Status.Queue.Count}");
                     continue;
                 }
 
@@ -59,6 +59,8 @@ namespace QueueOperator
                         body: patch2,
                         name: upcomingJob,
                         namespaceParameter: "default");
+
+                    Console.WriteLine($"[{nameof(DequeueWorker)}] Updated sample-queue to have status.activeJob = {upcomingJob}.");
                 }
                 catch (Exception ex)
                 {

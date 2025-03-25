@@ -8,7 +8,8 @@ using QueueOperator;
 Host.CreateDefaultBuilder(args)
     .ConfigureServices((hostContext, services) =>
     {
-        services.AddHostedService<EnqueueWorker>()
+        services
+            .AddHostedService<EnqueueWorker>()
             .AddHostedService<DequeueWorker>()
             .AddHostedService<SetActiveJobToNullWorker>();
 

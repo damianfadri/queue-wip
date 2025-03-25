@@ -1,0 +1,19 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: success-cronjob
+spec:
+  schedule: "* * * * *"  # This will run every minute
+  jobTemplate:
+    spec:
+      suspend: true
+      template:
+        spec:
+          containers:
+          - name: busybox
+            image: busybox:latest  # BusyBox image
+            args:
+            - /bin/sh
+            - -c
+            - "echo 'Running job in BusyBox container'; sleep 5"  # Task to run every minute
+          restartPolicy: OnFailure
