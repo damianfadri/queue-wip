@@ -9,58 +9,44 @@ namespace QueueOperator
     {
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var jobQueues = client.CustomObjects.ListNamespacedCustomObjectWithHttpMessagesAsync<V1JobQueueList>(
-                group: "navitaire.com",
-                version: "v1",
+            var jobList = client.BatchV1.ListNamespacedJobWithHttpMessagesAsync(
                 namespaceParameter: "default",
-                plural: "jobqueues",
-                watch: true);
+                watch: true,
+                cancellationToken: stoppingToken);
 
-            await foreach (var (type, jobQueue) in jobQueues.WatchAsync<V1JobQueue, V1JobQueueList>())
+            await foreach (var (type, job) in jobList.WatchAsync<V1Job, V1JobList>())
             {
                 if (type != WatchEventType.Modified)
                 {
-                    Console.WriteLine($"[{nameof(DequeueWorker)}] JobType is not Modified.");
-                    continue;
-                }
-
-                if (jobQueue.Status.ActiveJob != null)
-                {
-                    Console.WriteLine($"[{nameof(DequeueWorker)}] status.activeJob = {jobQueue.Status.ActiveJob}.");
-                    continue;
-                }
-
-                if (jobQueue.Status.Queue.Count == 0)
-                {
-                    Console.WriteLine($"[{nameof(DequeueWorker)}] status.queue.count = {jobQueue.Status.Queue.Count}");
                     continue;
                 }
 
                 try
                 {
-                    var upcomingJob = jobQueue.Status.Queue.Dequeue();
+                    if (!job.IsDone())
+                    {
+                        continue;
+                    }
 
-                    jobQueue.Status.ActiveJob = upcomingJob;
+                    // get next job to run
+                    var deployedJobs = await client.BatchV1.ListNamespacedJobAsync("default");
 
-                    var patch = new V1Patch(jobQueue.Status, V1Patch.PatchType.MergePatch);
-                    await client.PatchNamespacedCustomObjectStatusAsync(
-                        body: patch,
-                        group: "navitaire.com",
-                        version: "v1",
-                        namespaceParameter: "default",
-                        plural: "jobqueues",
-                        name: "sample-queue");
+                    var upcomingJob = deployedJobs.Items
+                        .OrderBy(deployedJobs => deployedJobs.Metadata.CreationTimestamp)
+                        .FirstOrDefault();
 
-                    var job = await client.BatchV1.ReadNamespacedJobAsync(upcomingJob, "default");
-                    job.Spec.Suspend = false;
+                    if (upcomingJob == null)
+                    {
+                        continue;
+                    }
 
-                    var patch2 = new V1Patch(job, V1Patch.PatchType.MergePatch);
-                    await client.PatchNamespacedJobAsync(
-                        body: patch2,
-                        name: upcomingJob,
+                    // set the job to running
+                    upcomingJob.Spec.Suspend = false;
+                    await client.BatchV1.PatchNamespacedJobAsync(
+                        body: new V1Patch(upcomingJob, V1Patch.PatchType.MergePatch),
+                        name: upcomingJob.Metadata.Name,
                         namespaceParameter: "default");
 
-                    Console.WriteLine($"[{nameof(DequeueWorker)}] Updated sample-queue to have status.activeJob = {upcomingJob}.");
                 }
                 catch (Exception ex)
                 {

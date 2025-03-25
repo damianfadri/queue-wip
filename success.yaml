@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: busybox-job
+  name: busybox-job-1
 spec:
   suspend: true
   template:

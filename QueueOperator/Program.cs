@@ -10,8 +10,7 @@ Host.CreateDefaultBuilder(args)
     {
         services
             .AddHostedService<EnqueueWorker>()
-            .AddHostedService<DequeueWorker>()
-            .AddHostedService<SetActiveJobToNullWorker>();
+            .AddHostedService<DequeueWorker>();
 
         var config = KubernetesClientConfiguration.BuildDefaultConfig();
 

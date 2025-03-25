@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: success-cronjob
+  name: success-cronjob-5
 spec:
   schedule: "* * * * *"  # This will run every minute
   jobTemplate:
