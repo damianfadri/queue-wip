@@ -1,0 +1,14 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: busybox-fail-job
+spec:
+  suspend: true
+  template:
+    spec:
+      containers:
+      - name: busybox
+        image: busybox
+        command: ["sh", "-c", "exit 1"]
+      restartPolicy: Never
+  backoffLimit: 4

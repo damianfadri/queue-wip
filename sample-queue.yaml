@@ -1,0 +1,7 @@
+apiVersion: navitaire.com/v1
+kind: JobQueue
+metadata:
+  name: sample-queue
+spec:
+  selector:
+    app: name
