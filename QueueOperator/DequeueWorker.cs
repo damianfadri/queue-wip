@@ -11,6 +11,7 @@ namespace QueueOperator
         {
             var jobList = client.BatchV1.ListNamespacedJobWithHttpMessagesAsync(
                 namespaceParameter: "default",
+                labelSelector: "jobs/queue-enabled=true",
                 watch: true,
                 cancellationToken: stoppingToken);
 
@@ -29,10 +30,14 @@ namespace QueueOperator
                     }
 
                     // get next job to run
-                    var deployedJobs = await client.BatchV1.ListNamespacedJobAsync("default");
+                    var deployedJobs = await client.BatchV1.ListNamespacedJobAsync(
+                        namespaceParameter: "default",
+                        labelSelector: "jobs/queue-enabled=true",
+                        cancellationToken: stoppingToken);
 
                     var upcomingJob = deployedJobs.Items
-                        .OrderBy(deployedJobs => deployedJobs.Metadata.CreationTimestamp)
+                        .Where(deployedJob => !deployedJob.IsDone())
+                        .OrderBy(deployedJob => deployedJob.Metadata.CreationTimestamp)
                         .FirstOrDefault();
 
                     if (upcomingJob == null)
@@ -40,12 +45,14 @@ namespace QueueOperator
                         continue;
                     }
 
-                    // set the job to running
-                    upcomingJob.Spec.Suspend = false;
+                    var patch = new V1Patch(new SuspendPatch(false), V1Patch.PatchType.MergePatch);
                     await client.BatchV1.PatchNamespacedJobAsync(
-                        body: new V1Patch(upcomingJob, V1Patch.PatchType.MergePatch),
+                        body: patch,
                         name: upcomingJob.Metadata.Name,
-                        namespaceParameter: "default");
+                        namespaceParameter: "default",
+                        cancellationToken: stoppingToken);
+
+                    Console.WriteLine($"{upcomingJob.Metadata.Name} is next, running.");
 
                 }
                 catch (Exception ex)

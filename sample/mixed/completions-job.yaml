@@ -1,0 +1,16 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: completions-job
+  labels:
+    jobs/queue-enabled: "true"
+spec:
+  completions: 3
+  template:
+    spec:
+      containers:
+      - name: busybox
+        image: busybox
+        command: ["sleep", "30"]
+      restartPolicy: Never
+  backoffLimit: 4

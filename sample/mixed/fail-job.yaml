@@ -1,0 +1,16 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fail-job
+  labels:
+    jobs/queue-enabled: "true"
+spec:
+  suspend: true
+  template:
+    spec:
+      containers:
+      - name: busybox
+        image: busybox
+        command: ["sh", "-c", "exit 1"]
+      restartPolicy: Never
+  backoffLimit: 4
