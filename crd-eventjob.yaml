@@ -1,0 +1,43 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: eventjobs.navitaire.com
+spec:
+  group: navitaire.com
+  scope: Namespaced
+  names:
+    plural: eventjobs
+    singular: eventjob
+    kind: EventJob
+    shortNames:
+    - ej
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            apiVersion:
+              description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources"
+              type: string
+            kind:
+              description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds"
+              type: string
+            spec:
+              type: object
+              description: "Spec defines the behavior of an event job."
+              properties:
+                eventName:
+                  type: string
+                  description: "The event name this event job is monitoring."
+                jobTemplate:
+                  $ref: "io.k8s.api.batch.v1.JobSpec"
+            status:
+              type: object
+              description: "Most recently observed status of the event job. Populated by the system. Read-only. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status"
+          required:
+          - spec
+      subresources:
+        status: {}

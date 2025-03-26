@@ -1,7 +1,5 @@
 ﻿using k8s;
 using k8s.Models;
-using Microsoft.Extensions.Hosting;
-using QueueOperator.CustomResourceDefinitions;
 
 namespace QueueOperator
 {
@@ -15,7 +13,7 @@ namespace QueueOperator
                 watch: true,
                 cancellationToken: stoppingToken);
 
-            await foreach (var (type, job) in jobList.WatchAsync<V1Job, V1JobList>())
+            await foreach (var (type, job) in jobList.WatchAsync<V1Job, V1JobList>(cancellationToken: stoppingToken))
             {
                 if (type != WatchEventType.Modified)
                 {

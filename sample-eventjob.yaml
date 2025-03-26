@@ -1,0 +1,18 @@
+apiVersion: navitaire.com/v1
+kind: EventJob
+metadata:
+  name: eventjob
+spec:
+  eventName: "monitors.file.added"
+  jobTemplate:
+    metadata:
+      labels:
+        jobs/queue-enabled: "true"
+    spec:
+      template:
+        spec:
+          containers:
+          - name: busybox
+            image: busybox
+            command: ["sleep", "30"]
+          restartPolicy: Never
