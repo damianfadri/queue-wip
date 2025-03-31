@@ -25,10 +25,7 @@ do {
 
     $REF_OBJECT=$(echo "${SCHEMA}" | jq ".definitions.""${REF_KEY}""")
 
-    echo $SPEC > spec.json
-    echo $REF_OBJECT > refobj.json
-
-    jq ".""$ref"" == ""${REF}""" spec.json refobj.json
+    $SPEC=$(echo "${SPEC}" | jq "walk(if type == ""object"" and .""$ref"" == ""${REF}"" then . = ${REF_OBJECT} else . end)")
 
     echo $SPEC
   }

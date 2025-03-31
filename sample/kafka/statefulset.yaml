@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka-messaging-statefulset
+  labels:
+    app: kafka
+    product: ness
+spec:
+  selector:
+    matchLabels:
+      app: kafka
+      product: ness
+  serviceName: kafka-messaging-service
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: kafka
+        product: ness
+    spec:
+      containers:
+        - name: kafka
+          image: bitnami/kafka:3.5
+          imagePullPolicy: IfNotPresent
+          env:
+            # KRaft settings
+            - name: KAFKA_CFG_NODE_ID
+              value: "0"
+            - name: KAFKA_CFG_PROCESS_ROLES
+              value: "controller,broker"
+            - name: KAFKA_CFG_CONTROLLER_QUORUM_VOTERS
+              value: 0@localhost:9093
+            - name: KAFKA_CFG_MESSAGE_MAX_BYTES
+              value: "20000000"
+            # Listeners
+            - name: KAFKA_CFG_LISTENERS
+              value: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
+            - name: KAFKA_CFG_ADVERTISED_LISTENERS
+              value: PLAINTEXT://:9092
+            - name: KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP
+              value: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+            - name: KAFKA_CFG_CONTROLLER_LISTENER_NAMES
+              value: "CONTROLLER"
+            - name: KAFKA_CFG_INTER_BROKER_LISTENER_NAME
+              value: "PLAINTEXT"
+            - name: KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE
+              value: "true"
+            - name: KAFKA_CREATE_TOPICS
+          ports:
+            - containerPort: 9092
+              name: plaintext
+            - containerPort: 9093
+              name: controller
+          securityContext:
+            allowPrivilegeEscalation: false
+  volumeClaimTemplates:
+    - metadata:
+        name: kafka-data
+        labels:
+          product: ness
+      spec:
+        accessModes:
+          - ReadWriteOnce # only one node can mount the volume for read/write operations at a time.
+        resources:
+          requests:
+            storage: 10Gi # size of the volume
